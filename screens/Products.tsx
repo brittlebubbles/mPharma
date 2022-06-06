@@ -12,7 +12,12 @@ import {
   View,
 } from "react-native";
 import { AntDesign, Feather, Ionicons } from "@expo/vector-icons";
-import { ProductType, getLatestPrice, storeDataLocally } from "../utils";
+import {
+  ProductType,
+  fetchDataLocally,
+  getLatestPrice,
+  storeDataLocally,
+} from "../utils";
 import React, { useCallback, useEffect, useState } from "react";
 
 import AddButton from "../components/AddButton";
@@ -32,15 +37,6 @@ const Products = ({ navigation }: any) => {
   const [price, setPrice] = useState("");
   const [error, setError] = useState("");
 
-  // const saveLocally = async (value) => {
-  //   try {
-  //     const jsonValue = JSON.stringify(value);
-  //     await AsyncStorage.setItem("@productsLocally", jsonValue);
-  //   } catch (e) {
-  //     // saving error
-  //   }
-  // };
-
   const handleSubmit = async () => {
     Keyboard.dismiss();
     if (name == "" && price == "") {
@@ -49,22 +45,23 @@ const Products = ({ navigation }: any) => {
       setModalVisible(!modalVisible);
       return;
     }
-    const product = {
+    const productData = {
       id: Math.random().toFixed(),
-      name: name,
+      name,
       prices: [
         {
-          date: new Date(),
+          date: Date.now(),
           id: Math.random().toFixed(),
           price: price,
         },
       ],
     };
-    setProducts([...products, product]);
+    storeDataLocally("@mProducts", JSON.stringify(productData));
+    setProducts([...products, productData]);
     setName("");
     setPrice("");
     // const jsonValue = JSON.stringify(value);
-    storeDataLocally("@products", product);
+
     setModalVisible(!modalVisible);
   };
 
@@ -107,32 +104,30 @@ const Products = ({ navigation }: any) => {
       });
   };
 
-  // const getTodosFromUserDevice = async () => {
-  //   try {
-  //     const products = await AsyncStorage.getItem("@productsLocally");
-  //     if (products != null) {
-  //       setProducts(JSON.parse(products));
-  //     }
-  //   } catch (error) {
-  //     console.log(error);
-  //   }
-  // };
+  const getTodosFromUserDevice = async () => {
+    try {
+      const result = await fetchDataLocally("@mProducts");
+      if (result != null) {
+        setProducts(JSON.parse(result));
+      }
+      console.log("this is the saved object data", result);
+    } catch (e) {
+      console.log(e);
+    }
+  };
 
-  // const deleteProduct = async (id) => {
-  //   const newProducts = products.filter((item) => item.id !== id);
-  //   setProducts(newProducts);
-  // };
-
-  // const getLatestPrice = (dates: any) => {
-  //   let latest = dates.reduce((r: any, a: any) => {
-  //     return r.date > a.date ? r : a;
-  //   });
-  //   return latest.price;
-  // };
+  const deleteProduct = async (id) => {
+    const newProducts = products.filter((item) => item.id !== id);
+    setProducts(newProducts);
+  };
 
   useEffect(() => {
     getProducts();
   }, []);
+
+  // useEffect(() => {
+  //   getTodosFromUserDevice();
+  // }, []);
 
   const ProductCard = ({ item }: ProductType) => {
     return (
@@ -276,9 +271,9 @@ const Products = ({ navigation }: any) => {
           >
             {products?.map((item, index) => {
               return (
-                <View key={index}>
-                  <ProductCard item={item} key={index} />
-                </View>
+                // <View key={index}>
+                <ProductCard item={item} key={index} />
+                // </View>
               );
             })}
 
@@ -541,12 +536,6 @@ const styles = StyleSheet.create({
   button: {
     borderRadius: 20,
     padding: 10,
-  },
-  buttonOpen: {
-    backgroundColor: "#F194FF",
-  },
-  buttonClose: {
-    backgroundColor: "#2196F3",
   },
   textStyle: {
     color: "white",

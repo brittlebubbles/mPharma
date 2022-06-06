@@ -19,11 +19,14 @@ export interface ProductType {
   };
 }
 
-export const storeDataLocally = async (key, value) => {
-  const jsonValue = JSON.stringify(value);
-  await AsyncStorage.setItem(key, jsonValue);
+export const storeDataLocally = async (key: string, value: any) => {
+  //   const jsonValue = JSON.stringify(value);
+  await AsyncStorage.setItem(key, value);
 };
 
-export const fetchDataLocally = async (key) => {
-  return await AsyncStorage.getItem(key);
+export const fetchDataLocally = async (key: string) => {
+  try {
+    const jsonValue = await AsyncStorage.getItem(key);
+    return jsonValue != null ? JSON.parse(jsonValue) : null;
+  } catch (error) {}
 };
