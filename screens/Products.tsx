@@ -1,11 +1,10 @@
 import {
   Alert,
   Dimensions,
-  FlatList,
-  Image,
+  Keyboard,
+  KeyboardAvoidingView,
   Modal,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -13,9 +12,11 @@ import {
   View,
 } from "react-native";
 import { AntDesign, Feather, Ionicons } from "@expo/vector-icons";
+import { ProductType, getLatestPrice, storeDataLocally } from "../utils";
 import React, { useCallback, useEffect, useState } from "react";
 
 import AddButton from "../components/AddButton";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Button } from "@rneui/base";
 import { Input } from "@rneui/themed";
 import { LinearGradient } from "expo-linear-gradient";
@@ -28,6 +29,72 @@ const Products = ({ navigation }: any) => {
   const [products, setProducts] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [name, setName] = useState("");
+  const [price, setPrice] = useState("");
+  const [error, setError] = useState("");
+
+  // const saveLocally = async (value) => {
+  //   try {
+  //     const jsonValue = JSON.stringify(value);
+  //     await AsyncStorage.setItem("@productsLocally", jsonValue);
+  //   } catch (e) {
+  //     // saving error
+  //   }
+  // };
+
+  const handleSubmit = async () => {
+    Keyboard.dismiss();
+    if (name == "" && price == "") {
+      Alert.alert("Error", "Please enter details");
+      setError("Fields Required");
+      setModalVisible(!modalVisible);
+      return;
+    }
+    const product = {
+      id: Math.random().toFixed(),
+      name: name,
+      prices: [
+        {
+          date: new Date(),
+          id: Math.random().toFixed(),
+          price: price,
+        },
+      ],
+    };
+    setProducts([...products, product]);
+    setName("");
+    setPrice("");
+    // const jsonValue = JSON.stringify(value);
+    storeDataLocally("@products", product);
+    setModalVisible(!modalVisible);
+  };
+
+  const handleEdit = async (id, name) => {
+    Keyboard.dismiss();
+    // if (name == "" && price == "") {
+    //   Alert.alert("Error", "Please enter details");
+    //   setError("Fields Required");
+    //   setModalVisible(!modalVisible);
+    //   return;
+    // }
+    // const product = {
+    //   id: Math.random().toFixed(),
+    //   name: name,
+    //   prices: [
+    //     {
+    //       date: new Date(),
+    //       id: Math.random().toFixed(),
+    //       price: price,
+    //     },
+    //   ],
+    // };
+    // setProducts([...products, product]);
+    setName(name);
+    setPrice(price);
+    setModalVisible(!modalVisible);
+
+    // console.log(product);
+  };
+
   const getProducts = async () => {
     fetch("http://www.mocky.io/v2/5c3e15e63500006e003e9795")
       .then((response) => response.json())
@@ -40,22 +107,34 @@ const Products = ({ navigation }: any) => {
       });
   };
 
+  // const getTodosFromUserDevice = async () => {
+  //   try {
+  //     const products = await AsyncStorage.getItem("@productsLocally");
+  //     if (products != null) {
+  //       setProducts(JSON.parse(products));
+  //     }
+  //   } catch (error) {
+  //     console.log(error);
+  //   }
+  // };
+
+  // const deleteProduct = async (id) => {
+  //   const newProducts = products.filter((item) => item.id !== id);
+  //   setProducts(newProducts);
+  // };
+
+  // const getLatestPrice = (dates: any) => {
+  //   let latest = dates.reduce((r: any, a: any) => {
+  //     return r.date > a.date ? r : a;
+  //   });
+  //   return latest.price;
+  // };
+
   useEffect(() => {
     getProducts();
-    // (async () => {
-    //   fetch("http://www.mocky.io/v2/5c3e15e63500006e003e9795")
-    //     .then((response) => response.json())
-    //     .then((data) => {
-    //       setProducts(data);
-    //       console.log("Response Object From Api", data);
-    //     })
-    //     .catch((error) => {
-    //       console.log(error);
-    //     });
-    // })();
   }, []);
 
-  const ProductCard = ({ item }: any) => {
+  const ProductCard = ({ item }: ProductType) => {
     return (
       <View style={styles.box} key={item.id}>
         <View style={styles.leftSection}>
@@ -64,12 +143,24 @@ const Products = ({ navigation }: any) => {
           </View>
           <View>
             <Text style={styles.pStyle}>{item?.name}</Text>
-            <Text style={styles.h2Style}>{item?.prices.price}</Text>
+            <Text style={styles.h2Style}>
+              <Text> GHS {getLatestPrice(item?.prices)}</Text>
+            </Text>
           </View>
-          {item.prices.map()}
         </View>
         <View style={styles.row}>
-          <TouchableOpacity>
+          <TouchableOpacity
+            // onPress={() => {
+            //   item.id
+            // }}
+            onPress={() => {
+              setModalVisible(true);
+              // if (item) {
+              //   handleEdit(item.name);
+              // }
+              // console.log({ ...item });
+            }}
+          >
             <Feather
               name="edit-2"
               size={24}
@@ -78,7 +169,25 @@ const Products = ({ navigation }: any) => {
             />
           </TouchableOpacity>
 
-          <TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
+              Alert.alert(
+                "Delete Product",
+                `Are you sure you want to delete ${item.name}`,
+                [
+                  {
+                    text: "No",
+                    style: "cancel",
+                  },
+                  {
+                    text: "Yes",
+                    style: "destructive",
+                    onPress: () => deleteProduct(item.id),
+                  },
+                ]
+              );
+            }}
+          >
             <AntDesign
               name="delete"
               size={24}
@@ -164,25 +273,12 @@ const Products = ({ navigation }: any) => {
               flexGrow: 1,
               paddingVertical: 5,
             }}
-            // style={[tw`bg-gray-50 `]}
           >
-            {/* {[products]?.map((item, index) => {
-              return <ProductCard item={item} key={index} />;
-            })} */}
-
             {products?.map((item, index) => {
               return (
                 <View key={index}>
-                  <Text>{item.name}</Text>
-                  {item.prices.map((price) => {
-                    return (
-                      <View key={price.id}>
-                        <Text>{price.price}</Text>
-                      </View>
-                    );
-                  })}
+                  <ProductCard item={item} key={index} />
                 </View>
-                // <ProductCard item={item} key={index} />
               );
             })}
 
@@ -204,82 +300,103 @@ const Products = ({ navigation }: any) => {
       >
         <View style={styles.centeredView}>
           <View style={styles.modalView}>
-            <View style={{ alignSelf: "flex-end" }}>
-              <TouchableOpacity
-                style={[styles.button]}
-                onPress={() => setModalVisible(!modalVisible)}
-              >
-                <AntDesign name="close" size={24} color="black" />
-              </TouchableOpacity>
-            </View>
-            <View
-              style={{
-                alignContent: "center",
-                alignItems: "center",
-                alignSelf: "center",
+            <KeyboardAvoidingView
+              enabled
+              contentContainerStyle={{
+                flexGrow: 1,
+                marginTop: 5,
               }}
             >
-              <Text
+              {/* <Text>{error}</Text> */}
+              <View style={{ alignSelf: "flex-end" }}>
+                <TouchableOpacity
+                  style={[styles.button]}
+                  onPress={() => setModalVisible(!modalVisible)}
+                >
+                  <AntDesign name="close" size={24} color="black" />
+                </TouchableOpacity>
+              </View>
+              <View
                 style={{
-                  alignSelf: "flex-start",
-                  paddingBottom: 5,
+                  alignContent: "center",
+                  alignItems: "center",
+                  alignSelf: "center",
                 }}
               >
-                Name
-              </Text>
-              <TextInput
-                style={styles.formInputs}
-                onChangeText={(name: any) => setName(name)}
-                value={name}
-                placeholder="Enter product name"
-                autoCapitalize="none"
-                placeholderTextColor="#ABB3BF"
-                keyboardType="default"
-              />
+                <Text
+                  style={{
+                    alignSelf: "flex-start",
+                    paddingBottom: 5,
+                  }}
+                >
+                  Name
+                </Text>
+                <TextInput
+                  style={styles.formInputs}
+                  onChangeText={(name: any) => setName(name)}
+                  value={name}
+                  placeholder="Enter product name"
+                  autoCapitalize="none"
+                  placeholderTextColor="#ABB3BF"
+                  keyboardType="default"
+                />
 
-              <Text
+                <Text
+                  style={{
+                    alignSelf: "flex-start",
+                    paddingBottom: 5,
+                  }}
+                >
+                  Price
+                </Text>
+
+                <TextInput
+                  style={styles.formInputs}
+                  onChangeText={(price: any) => setPrice(price)}
+                  value={price}
+                  placeholder="Enter price"
+                  autoCapitalize="none"
+                  placeholderTextColor="#ABB3BF"
+                  keyboardType="numeric"
+                />
+              </View>
+              {/* <View style={{ alignItems: "center", alignContent: "center" }}> */}
+              <Button
+                title="Add"
                 style={{
-                  alignSelf: "flex-start",
-                  paddingBottom: 5,
+                  width: "60%",
+                  height: 50,
+                  alignItems: "center",
+                  alignContent: "center",
+                  alignSelf: "center",
+                  marginTop: 15,
                 }}
-              >
-                Price
-              </Text>
-
-              <TextInput
-                style={styles.formInputs}
-                onChangeText={(name: any) => setName(name)}
-                value={name}
-                placeholder="Enter product name"
-                autoCapitalize="none"
-                placeholderTextColor="#ABB3BF"
-                keyboardType="default"
+                // disabled={!name || !price}
+                onPress={handleSubmit}
+                // onPress={(item) => {
+                //   if (item) {
+                //     handleEdit();
+                //   } else {
+                //     handleSubmit();
+                //   }
+                // }}
               />
-            </View>
-            {/* <View style={{ alignItems: "center", alignContent: "center" }}> */}
-            <Button
-              title="Add"
-              style={{
-                width: "60%",
-                height: 50,
-                alignItems: "center",
-                alignContent: "center",
-                alignSelf: "center",
-                marginTop: 15,
-              }}
-            />
-            {/* </View> */}
+              {/* </View> */}
+            </KeyboardAvoidingView>
           </View>
         </View>
       </Modal>
-      {/* <Pressable
-        style={[styles.button, styles.buttonOpen]}
-        onPress={() => setModalVisible(true)}
-      >
-        <Text style={styles.textStyle}>Show Modal</Text>
-      </Pressable> */}
+
       <AddButton
-        onPress={() => setModalVisible(true)}
+        onPress={(item) => {
+          setModalVisible(true);
+
+          // if (item) {
+          //   handleEdit();
+          // } else {
+          //   handleSubmit();
+          // }
+        }}
         antIconName="plus"
         style={styles.addBtn}
       />
@@ -372,6 +489,7 @@ const styles = StyleSheet.create({
   pStyle: {
     color: "grey",
     fontSize: 12,
+    paddingBottom: 8,
   },
   h2Style: {
     fontSize: 16,
