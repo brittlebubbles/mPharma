@@ -7,7 +7,7 @@ Submission for mPharma. Based on React Native(Expo)
 - Clone project and navigate to the project directory
 
 ```
-    git clone https://github.com/brittlebubbles/mPharma
+    git clone https://github.com/brittlebubbles/mPharma.git
     cd mPharma
 ```
 
