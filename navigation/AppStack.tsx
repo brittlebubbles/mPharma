@@ -14,6 +14,11 @@ export default function AppStack() {
         component={Products}
         options={{ headerShown: false }}
       />
+      {/* <Stack.Screen
+        name="ProductsDetails"
+        component={ProductsDetails}
+        options={{ headerShown: false }}
+      /> */}
     </Stack.Navigator>
   );
 }
